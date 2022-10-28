@@ -1,3 +1,12 @@
+# Jogo Puzzle do Fósforos
+# Estado: Matriz 2x3
+# Estado Inicial: 6 fósforos no índice [0][0]
+# Estado Final: 1 fósforo em cada índice da matriz
+# Modelo de Transição: a cada ação, um novo estado é gerado
+# Ações/Regras: - Apenas é possivel mover um fósforo para a direita
+#               - Mover 2 fósforos para a esquerda
+#               - Mover 2 ou 3 fósforos para cim ou para baixo 
+
 import numpy as np
 from collections import OrderedDict
 
