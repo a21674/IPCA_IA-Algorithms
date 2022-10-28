@@ -34,22 +34,31 @@ class Vertice:
         self.estado = estado
         self.heuristica = 0
         self.visitado = False
-        self.vertices_adjacentes = OrderedDict()
+        self.vertices_adjacentes = []
         
     def adiciona_adjacente(self, adjacente):
-        self.vertices_adjacentes[adjacente.funcao_custo] = adjacente
+        self.vertices_adjacentes.append(adjacente)
+                
+    # Heuristica (professor) definida pelo somatório dos valores ao quadrado, isso fará com que indices com muitas peças sejam + penalizados
+    """ def calc_heuristica(self):        
+        for i in range(len(self.estado)): #linhas
+            for j in range(len(self.estado[i])): #colunas
+                self.heuristica += self.estado[i][j]**2 """
     
+    #Heuristica (sergio) definida pelo somatório de indices vazios
     def calc_heuristica(self):        
         for i in range(len(self.estado)): #linhas
             for j in range(len(self.estado[i])): #colunas
-                self.heuristica += self.estado[i][j]**2
-            
+                if(self.estado[i][j] == 0):
+                    self.heuristica += 1
+    
+ 
     
 # Responsavel por criar os vertices adjacentes a um vertice
 class Adjacente:
     def __init__(self, vertice, custo = 1) -> None:
         self.vertice = vertice
-        self.custo = custo
+        self.custo = custo #definido o custo de 1, irá armazenar o acumulado do custo até ao estado atual
         self.funcao_custo = vertice.heuristica + self.custo
    
 
@@ -73,8 +82,8 @@ class AEstrelaSearch:
                 print(*row)
            
    
-        
-    def define_adjacentes(self, vertice_atual):        
+    def define_adjacentes(self, vertice_atual):       
+        self.nivel_profundidade += 1 # desce um nivel 
         for i in range(len(vertice_atual.estado)): #linhas
             for j in range(len(vertice_atual.estado[i])): #colunas
                 if vertice_atual.estado[i][j] > 0: #verifica se tem fosforos para mudar
@@ -87,7 +96,7 @@ class AEstrelaSearch:
                                                 
                         novo_vertice = Vertice(novo_estado)
                         novo_vertice.calc_heuristica()
-
+                        
                         vertice_atual.adiciona_adjacente(Adjacente(novo_vertice))
                                                            
                     # Movimento 2 fosforos para a esquerda
@@ -102,11 +111,11 @@ class AEstrelaSearch:
                         vertice_atual.adiciona_adjacente(Adjacente(novo_vertice))
                         
                     # Movimento 2 ou 3 fosforos para cima
-                    if i - 1 > 0 and vertice_atual.estado[i][j] > 0: #verificar se não está na primeira linha para poder deslocar para cima
+                    if i - 1 >= 0 and vertice_atual.estado[i][j] > 0: #verificar se não está na primeira linha para poder deslocar para cima
                         qtd_atual = 2 # forma de controlar a qtd de fosforos que o elemento tem, caso so tenha 1 irá apenas correr um ciclo
-                        if vertice_atual.estado[i][j] > 1:
-                            qtd_atual = 3
-                        for qtd in range(1, qtd_atual): # para criar o estado tanto para 1 fosforo como 2 fosforos movimentados (3 não conta)
+                        if vertice_atual.estado[i][j] > 2:
+                            qtd_atual = 4
+                        for qtd in range(2, qtd_atual): # para criar o estado tanto para 1 fosforo como 2 fosforos movimentados (3 não conta)
                             novo_estado = vertice_atual.estado.copy() #coloco aqui, pq irá ser necessário criar um novo estado para cada if
                             novo_estado[i][j] = novo_estado[i][j] - qtd #removido um fosforo do indice atual
                             novo_estado[i - 1][j] = novo_estado[i - 1][j] + qtd #adicionado um fosforo ao indice da linha anterior
@@ -118,10 +127,13 @@ class AEstrelaSearch:
                             
                     # Movimento 2 ou 3 fosforos para baixo
                     if i + 1 < len(vertice_atual.estado) and vertice_atual.estado[i][j] > 0: #verificar se não está na última linha para poder deslocar para baixo
-                        qtd_atual = 2 # forma de controlar a qtd de fosforos que o elemento tem, caso so tenha 1 irá apenas correr um ciclo
-                        if vertice_atual.estado[i][j] > 1:
-                            qtd_atual = 3
-                        for qtd in range(1, qtd_atual): # para criar o estado tanto para 1 fosforo como 2 fosforos movimentados (3 não conta)
+                        qtd_atual = 2 # forma de controlar a qtd de fosforos que o elemento tem, caso so tenha 2 irá apenas correr um ciclo (tendo em conta que para baixo so pode ser movido 2 ou 3 fosforos)
+                        
+                        #Se a posição atual tiver mais do que 2 fosforo, então ele pode fazer o ciclo para 2 fosforo, como para 3 fosforos
+                        if vertice_atual.estado[i][j] > 2:
+                            qtd_atual = 4
+                        
+                        for qtd in range(2, qtd_atual): # para criar o estado tanto para 1 fosforo como 2 fosforos movimentados (3 não conta)
                             novo_estado = vertice_atual.estado.copy() #coloco aqui, pq irá ser necessário criar um novo estado para cada if
                             novo_estado[i][j] = novo_estado[i][j] - qtd #removido um fosforo do indice atual
                             novo_estado[i + 1][j] = novo_estado[i + 1][j] + qtd #adicionado um fosforo ao indice da linha seguinte
@@ -129,12 +141,14 @@ class AEstrelaSearch:
                             novo_vertice = Vertice(novo_estado)
                             novo_vertice.calc_heuristica()
 
-                            vertice_atual.adiciona_adjacente(Adjacente(novo_vertice))
-                
+                            vertice_atual.adiciona_adjacente(Adjacente(novo_vertice)) 
         return  
-            
-            
-            
+              
+    def get_adjacente_menor_custo(self, adjacentes):
+        adjacentes.sort(key=lambda x: x.funcao_custo)
+        return adjacentes[0]
+        
+        
     def iniciar_busca(self, vertice_atual, vertice_objetivo):
         # 1 - Define o estado como já visitado
         vertice_atual.visitado = True
@@ -142,13 +156,17 @@ class AEstrelaSearch:
         self.print_percurso()
         
         # 2 - Efetua teste objetivo
-        if(np.array_equal(vertice_atual, vertice_objetivo)):
+        if(np.array_equal(vertice_atual.estado, vertice_objetivo.estado)):
             self.finalizado = True
+            self.totalCost += vertice_atual.heuristica
             print("Terminou com um custo total de: ", self.totalCost)
+            return
         else:
+        # 3 - Gera os estados possiveis a partir do estado atual
             self.define_adjacentes(vertice_atual)
             if vertice_atual.vertices_adjacentes:
-                proximo_vertice = list(vertice_atual.vertices_adjacentes.values())[0]
+                proximo_vertice = self.get_adjacente_menor_custo(vertice_atual.vertices_adjacentes)
+                self.totalCost += proximo_vertice.custo          
                 self.iniciar_busca(proximo_vertice.vertice, vertice_objetivo)
 
 
@@ -166,9 +184,6 @@ def main():
     print("\nEstado Final: ")
     newGame.print_tabuleiro(vertice_objetivo)
 
-    
-    
-    
     
     #inicio da busca
     print('\nInicio da Busca')
