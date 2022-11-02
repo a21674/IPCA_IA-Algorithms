@@ -58,7 +58,7 @@ class Vertice:
     def calc_heuristica(self):        
         for i in range(len(self.estado)): #linhas
             for j in range(len(self.estado[i])): #colunas
-                if(self.estado[i][j] == 0):
+                if(self.estado[i][j] == 1):
                     self.heuristica += 1
     
  
